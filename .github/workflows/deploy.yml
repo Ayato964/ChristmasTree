@@ -1,0 +1,50 @@
+name: Build and Verify
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python Dependencies
+      run: |
+        pip install fastapi uvicorn python-multipart google-genai python-dotenv pillow requests
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install Frontend Dependencies
+      run: |
+        cd frontend
+        npm install
+
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
+      env:
+        # Define this in GitHub Actions Secrets/Variables
+        VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
+
+    - name: Verify Backend (Dry Run)
+      run: |
+        python -c "import main; print('Main.py imports successful')"
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+    - name: Build Docker Image
+      run: docker build . -t christmas-tree-app

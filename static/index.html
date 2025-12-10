@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nano Banana Christmas Tree</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        h1,
+        h2 {
+            font-family: 'Mountains of Christmas', cursive;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .snow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: #fff;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-4 text-white overflow-hidden relative">
+
+    <!-- Snow Effect -->
+    <div class="snow-container" id="snow"></div>
+
+    <div class="glass p-8 rounded-2xl max-w-4xl w-full z-10 flex flex-col md:flex-row gap-8 items-center">
+        <!-- Tree Display -->
+        <div class="flex-1 w-full flex flex-col items-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 text-center text-yellow-300 drop-shadow-md">Christmas Tree
+            </h1>
+            <div
+                class="relative w-full aspect-[1/1] bg-black/20 rounded-lg overflow-hidden border-2 border-white/30 shadow-inner flex items-center justify-center">
+                <img id="treeImage" src="/assets/tree.png" alt="Christmas Tree"
+                    class="max-w-full max-h-full object-contain transition-opacity duration-500"
+                    onerror="this.style.display='none'; document.getElementById('placeholder').style.display='block'">
+                <div id="placeholder" class="hidden text-center p-4">
+                    <p class="text-xl">No decoration yet!</p>
+                    <p class="text-sm opacity-75">Upload a mofumofu to start.</p>
+                </div>
+                <!-- Loading Overlay -->
+                <div id="loading" class="absolute inset-0 bg-black/50 flex items-center justify-center hidden">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex-1 w-full flex flex-col gap-6">
+            <div class="glass bg-white/10 p-6 rounded-xl">
+                <h2 class="text-3xl font-bold mb-4 text-center">Decorate It!</h2>
+                <p class="mb-4 text-center text-gray-100">Upload your "Mofumofu" image to add it to the global tree!</p>
+
+                <form id="uploadForm" class="flex flex-col gap-4">
+                    <div class="flex items-center justify-center w-full">
+                        <label for="file-upload"
+                            class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/20 hover:bg-gray-50/30 transition-colors">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-8 h-8 mb-4 text-gray-200" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                                </svg>
+                                <p class="mb-2 text-sm text-gray-200"><span class="font-semibold">Click to upload</span>
+                                    or drag and drop</p>
+                                <p class="text-xs text-gray-300">PNG, JPG</p>
+                            </div>
+                            <input id="file-upload" type="file" class="hidden" accept="image/*" required />
+                        </label>
+                    </div>
+                    <div id="preview-container" class="hidden flex justify-center">
+                        <img id="file-preview" class="h-20 rounded shadow-md border border-white/50">
+                    </div>
+
+                    <button type="submit"
+                        class="w-full py-3 px-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full shadow-lg transform transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                        🎄 Decorate! 🎄
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions / Footer -->
+    <div class="mt-8 text-center opacity-80 z-10 glass p-4 text-sm">
+        <p>Built with <span class="font-bold text-yellow-300">Nano Banana</span> & FastAPI</p>
+        <p>Changes update in real-time for everyone!</p>
+    </div>
+
+    <script>
+        // Snow Effect
+        function createSnow() {
+            const container = document.getElementById('snow');
+            for (let i = 0; i < 50; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.innerHTML = '❄';
+                flake.style.left = Math.random() * 100 + 'vw';
+                flake.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                flake.style.animationDuration = (Math.random() * 5 + 3) + 's';
+                flake.style.opacity = Math.random();
+                container.appendChild(flake);
+            }
+        }
+        createSnow();
+
+        // WebSocket
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+        ws.onmessage = function (event) {
+            console.log("Tree update received!");
+            refreshTree();
+        };
+
+        function refreshTree() {
+            const img = document.getElementById('treeImage');
+            const placeholder = document.getElementById('placeholder');
+            const timestamp = new Date().getTime();
+
+            // Create a new image to load in background before swapping to avoid flickering
+            const tempImg = new Image();
+            tempImg.onload = function () {
+                img.src = this.src;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+                document.getElementById('loading').classList.add('hidden');
+            };
+            tempImg.onerror = function () {
+                // Keep showing placeholder if load fails (e.g. at very start)
+                document.getElementById('loading').classList.add('hidden');
+            }
+            tempImg.src = `/assets/tree.png?t=${timestamp}`;
+        }
+
+        // Initial load
+        refreshTree();
+
+        // File Upload
+        const fileInput = document.getElementById('file-upload');
+        const previewContainer = document.getElementById('preview-container');
+        const filePreview = document.getElementById('file-preview');
+
+        fileInput.addEventListener('change', function (e) {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    filePreview.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            document.getElementById('loading').classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    // Reset form
+                    fileInput.value = '';
+                    previewContainer.classList.add('hidden');
+                    // Wait for websocket to update, or force update shortly
+                } else {
+                    alert('Decoration failed: ' + result.message);
+                    document.getElementById('loading').classList.add('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error uploading image');
+                document.getElementById('loading').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>

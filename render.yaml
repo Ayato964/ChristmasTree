@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: christmas-tree-app
+    runtime: docker
+    plan: free
+    region: oregon
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: VITE_BACKEND_URL
+        fromService:
+          type: web
+          name: christmas-tree-app
+          property: url

@@ -131,7 +131,7 @@ function App() {
               src={treeUrl}
               alt="Christmas Tree"
               className="w-full h-full object-contain drop-shadow-2xl transition-opacity duration-300"
-              onError={(e) => console.error("Failed to load:", treeUrl)}
+              onError={() => console.error("Failed to load:", treeUrl)}
             />
           </div>
         </div>

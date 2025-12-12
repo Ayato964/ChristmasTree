@@ -26,8 +26,12 @@ os.makedirs("assets", exist_ok=True)
 os.makedirs("assets/history", exist_ok=True)
 
 # Mount static files
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+app.mount("/tree-assets", StaticFiles(directory="assets"), name="tree-assets")
+# Mount frontend assets if they exist (for production)
+if os.path.exists("static/assets"):
+    app.mount("/assets", StaticFiles(directory="static/assets"), name="frontend-assets")
 
 # CORS
 from fastapi.middleware.cors import CORSMiddleware

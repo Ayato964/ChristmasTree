@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
       host: true, // Listen on all addresses
       proxy: {
         '/assets': backendUrl,
+        '/tree-assets': backendUrl,
         '/upload': backendUrl,
         '/admin': backendUrl,
         '/ws': {

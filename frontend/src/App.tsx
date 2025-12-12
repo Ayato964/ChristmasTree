@@ -5,11 +5,11 @@ import './index.css';
 
 const SnowEffect = () => {
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-50" aria-hidden="true">
       {Array.from({ length: 50 }).map((_, i) => (
         <div
           key={i}
-          className="absolute text-white text-opacity-80 animate-fall"
+          className="absolute text-blue-300 text-opacity-80 animate-fall"
           style={{
             left: `${Math.random() * 100}vw`,
             top: '-20px',
@@ -92,7 +92,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRestore, onR
                 <div key={filename} className="group relative bg-gray-800 rounded-xl overflow-hidden border border-white/5 hover:border-christmas-gold/50 transition-all">
                   <div className="aspect-square relative">
                     <img
-                      src={`/assets/history/${filename}`}
+                      src={`/tree-assets/history/${filename}`}
                       alt={filename}
                       className="w-full h-full object-cover"
                     />
@@ -122,7 +122,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRestore, onR
 };
 
 function App() {
-  const [treeUrl, setTreeUrl] = useState<string>(`/assets/current_tree.png?t=${Date.now()}`);
+  const [treeUrl, setTreeUrl] = useState<string>(`/tree-assets/current_tree.png?t=${Date.now()}`);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +146,7 @@ function App() {
       ws.onmessage = (event) => {
         if (event.data === 'update_tree') {
           // Force refresh
-          setTreeUrl(`/assets/current_tree.png?t=${Date.now()}`);
+          setTreeUrl(`/tree-assets/current_tree.png?t=${Date.now()}`);
           setLoading(false);
         }
       };
@@ -254,7 +254,7 @@ function App() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4">
+    <div className="relative w-full h-[100dvh] flex flex-col md:flex-row overflow-hidden bg-white">
       <SnowEffect />
       <AdminPanel
         isOpen={isAdminOpen}
@@ -263,96 +263,90 @@ function App() {
         onRollback={handleRollback}
       />
 
-      <div className="glass w-full max-w-5xl rounded-3xl p-8 flex flex-col md:flex-row gap-8 z-10">
+      {/* Left Panel: Tree */}
+      <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col items-center justify-center relative bg-white z-10 md:border-r border-b md:border-b-0 border-gray-100 p-4">
 
-        {/* Tree Section */}
-        <div className="flex-1 flex flex-col items-center justify-center relative min-h-[400px]">
-          <h1 className="font-christmas text-5xl md:text-6xl text-christmas-gold drop-shadow-lg mb-8 text-center animate-pulse">
-            Christmas Tree
-          </h1>
+        <div className="relative w-full h-full flex items-center justify-center p-2 md:p-8 transition-all duration-500">
+          {/* Loading Overlay */}
+          {loading && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl">
+              <div className="w-16 h-16 border-4 border-christmas-gold border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
 
-          <div className="relative w-full aspect-square max-w-[500px] flex items-center justify-center p-4 border-2 border-white/20 rounded-2xl bg-black/20 backdrop-blur-sm shadow-inner transition-all duration-500 hover:scale-[1.02]">
-            {/* Loading Overlay */}
-            {loading && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 rounded-2xl">
-                <div className="w-16 h-16 border-4 border-christmas-gold border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
+          <img
+            src={treeUrl}
+            alt="Christmas Tree"
+            className="w-full h-full object-contain drop-shadow-2xl transition-opacity duration-300 filter saturate-110"
+            onError={() => console.error("Failed to load:", treeUrl)}
+          />
 
-            <img
-              src={treeUrl}
-              alt="Christmas Tree"
-              className="w-full h-full object-contain drop-shadow-2xl transition-opacity duration-300"
-              onError={() => console.error("Failed to load:", treeUrl)}
-            />
-          </div>
-
+          {/* Download Button Overlay - Bottom Right of Tree Panel */}
           <a
             href={treeUrl}
             download={`christmas_tree_${Date.now()}.png`}
-            className="mt-6 px-8 py-3 bg-gradient-to-r from-green-600 to-green-800 hover:from-green-500 hover:to-green-700 text-white rounded-full font-bold shadow-lg transform transition-all hover:scale-105 flex items-center gap-2 border border-white/20"
+            className="absolute bottom-4 right-4 p-3 bg-white/80 hover:bg-white text-christmas-red border border-christmas-red rounded-full font-bold shadow-sm hover:shadow-md transition-all z-30"
+            title="Download"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            Download Creation
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           </a>
-        </div>
-
-        {/* Controls Section */}
-        <div className="flex-1 flex flex-col justify-center">
-          <div className="glass p-8 rounded-2xl bg-white/5 border border-white/10 shadow-xl">
-            <h2 className="font-christmas text-4xl mb-2 text-center text-white">Decorate It!</h2>
-            <p className="text-center text-gray-200 mb-8 font-light">
-              Upload your "Mofumofu" to join the party.
-            </p>
-
-            <form onSubmit={handleUpload} className="flex flex-col gap-6">
-              <div className="w-full">
-                <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/30 rounded-xl cursor-pointer hover:bg-white/10 transition-colors group">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    {preview ? (
-                      <img src={preview} className="h-28 object-contain rounded-lg shadow-md" alt="Preview" />
-                    ) : (
-                      <>
-                        <svg className="w-10 h-10 mb-3 text-gray-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        <p className="mb-2 text-sm text-gray-300 group-hover:text-white"><span className="font-semibold">Click to upload</span></p>
-                        <p className="text-xs text-gray-400">PNG or JPG</p>
-                      </>
-                    )}
-                  </div>
-                  <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || !preview}
-                className="w-full py-4 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold rounded-xl shadow-lg transform transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-red-900/50"
-              >
-                {loading ? 'Decorating...' : '✨ Add Decoration ✨'}
-              </button>
-
-              {uploadStatus && (
-                <div className={`text-center p-2 rounded-lg text-sm font-semibold ${uploadStatus.includes('Failed') ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-200'}`}>
-                  {uploadStatus}
-                </div>
-              )}
-            </form>
-          </div>
         </div>
       </div>
 
+      {/* Right Panel: Controls */}
+      <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col justify-center items-center bg-gray-50 p-6 md:p-12 z-20 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] overflow-y-auto">
+        <div className="w-full max-w-lg bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-gray-100">
+          <h2 className="font-christmas text-4xl md:text-5xl mb-4 text-center text-gray-800">Decorate It!</h2>
+          <p className="text-center text-gray-500 mb-6 md:mb-10 font-normal text-lg">
+            Upload your "Mofumofu" to join the party.
+          </p>
+
+          <form onSubmit={handleUpload} className="flex flex-col gap-6">
+            <div className="w-full">
+              <label className="flex flex-col items-center justify-center w-full h-56 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-christmas-red transition-all group relative overflow-hidden">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6 z-10">
+                  {preview ? (
+                    <img src={preview} className="h-44 object-contain shadow-lg rounded-md" alt="Preview" />
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 mb-4 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                        <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                      </div>
+                      <p className="mb-2 text-lg text-gray-600 font-medium group-hover:text-gray-800">Click to upload image</p>
+                      <p className="text-sm text-gray-400">PNG or JPG supported</p>
+                    </>
+                  )}
+                </div>
+                <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !preview}
+              className="w-full py-5 bg-christmas-red hover:bg-red-700 text-white text-xl font-bold rounded-2xl shadow-lg hover:shadow-xl transform transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            >
+              {loading ? (
+                <>Decorating...</>
+              ) : (
+                <><span>✨</span> Add Decoration <span>✨</span></>
+              )}
+            </button>
+
+            {uploadStatus && (
+              <div className={`text-center p-3 rounded-xl text-base font-medium ${uploadStatus.includes('Failed') ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+                {uploadStatus}
+              </div>
+            )}
+          </form>
+        </div>
+      </div>
       <style>{`
         @keyframes fall {
           to { transform: translateY(105vh); }
         }
         .animate-fall {
             animation-name: fall;
-        }
-        .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
         }
       `}</style>
     </div>

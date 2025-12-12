@@ -7,8 +7,3 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
-      - key: VITE_BACKEND_URL
-        fromService:
-          type: web
-          name: christmas-tree-app
-          property: url

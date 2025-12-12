@@ -237,7 +237,7 @@ function App() {
     }
   };
 
-  const handleRollback = async (steps: number) => {
+  const handleRollback = async (_steps: number) => {
     // Determine steps. "Undo Last" implies we want to go back to the previous one.
     // If we are at index 0, we want index 1. So steps=1.
     // My previous assumption in backend was "rollback(steps) -> target_index = steps".

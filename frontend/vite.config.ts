@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/assets': backendUrl,
         '/upload': backendUrl,
+        '/admin': backendUrl,
         '/ws': {
           target: wsUrl,
           ws: true,

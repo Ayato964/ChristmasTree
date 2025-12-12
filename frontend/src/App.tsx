@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './index.css';
 
-// Components (will be extracted later if complex)
+// --- Components ---
+
 const SnowEffect = () => {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -26,20 +27,116 @@ const SnowEffect = () => {
   );
 };
 
+interface AdminPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onRestore: (filename: string) => void;
+  onRollback: (steps: number) => void;
+}
+
+const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRestore, onRollback }) => {
+  const [history, setHistory] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchHistory();
+    }
+  }, [isOpen]);
+
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/admin/history'); // Proxied
+      const data = await res.json();
+      setHistory(data.history || []);
+    } catch (e) {
+      console.error("Failed to fetch history", e);
+    }
+    setLoading(false);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+      <div className="bg-gray-900 w-full max-w-4xl h-[80vh] rounded-3xl shadow-2xl flex flex-col border border-white/10 overflow-hidden">
+
+        {/* Header */}
+        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-gray-800/50">
+          <h2 className="text-2xl font-bold text-christmas-gold">🎄 Admin Control Panel</h2>
+          <div className="flex gap-4">
+            <button
+              onClick={() => onRollback(0)} // Rollback 0 means "go to generated image before current"? No, rollback(1) is usually what we want.
+              // Wait, if current is index 0, rollback(1) goes to index 1.
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold transition-colors shadow-lg"
+            >
+              Undo Last Change
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="text-white text-center">Loading history...</div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {history.map((filename, idx) => (
+                <div key={filename} className="group relative bg-gray-800 rounded-xl overflow-hidden border border-white/5 hover:border-christmas-gold/50 transition-all">
+                  <div className="aspect-square relative">
+                    <img
+                      src={`/assets/history/${filename}`}
+                      alt={filename}
+                      className="w-full h-full object-cover"
+                    />
+                    {idx === 0 && (
+                      <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-md">
+                        CURRENT
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-gray-400 truncate mb-3" title={filename}>{filename}</p>
+                    <button
+                      onClick={() => onRestore(filename)}
+                      className="w-full py-2 bg-blue-600/20 hover:bg-blue-600 text-blue-200 hover:text-white rounded-lg text-sm font-semibold transition-all"
+                    >
+                      Restore This Version
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
-  // Use current_tree.png as default to show latest state immediately
   const [treeUrl, setTreeUrl] = useState<string>(`/assets/current_tree.png?t=${Date.now()}`);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
+  // Admin State
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const keyBuffer = useRef<string>("");
+
   // WebSocket Connection
   useEffect(() => {
-    // Dynamic WebSocket URL based on current host (handles localhost vs IP)
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = window.location.host;
-    const wsUrl = `${wsProtocol}//${wsHost}/ws`; // Proxy forwards /ws -> backend
+    const wsUrl = `${wsProtocol}//${wsHost}/ws`;
 
     let ws: WebSocket;
 
@@ -48,7 +145,7 @@ function App() {
       ws.onopen = () => console.log('Connected to WS');
       ws.onmessage = (event) => {
         if (event.data === 'update_tree') {
-          // Force refresh current_tree.png
+          // Force refresh
           setTreeUrl(`/assets/current_tree.png?t=${Date.now()}`);
           setLoading(false);
         }
@@ -63,6 +160,30 @@ function App() {
     return () => {
       if (ws) ws.close();
     };
+  }, []);
+
+  // Secret Code Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore modifier keys and non-printable keys (except specific ones we might need, but here we just need numbers and !)
+      if (e.key.length > 1) return;
+
+      keyBuffer.current += e.key;
+
+      // Keep buffer small
+      if (keyBuffer.current.length > 20) {
+        keyBuffer.current = keyBuffer.current.slice(-20);
+      }
+
+      // Check for exact string "964963!!"
+      if (keyBuffer.current.endsWith("964963!!")) {
+        setIsAdminOpen(true);
+        keyBuffer.current = ""; // Reset
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,11 +207,7 @@ function App() {
     formData.append('file', fileInputRef.current.files[0]);
 
     try {
-      // Use relative path (proxied)
-      const response = await fetch('/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch('/upload', { method: 'POST', body: formData });
       const result = await response.json();
       if (result.status === 'success') {
         setUploadStatus('Decoration added!');
@@ -107,9 +224,44 @@ function App() {
     }
   };
 
+  const handleRestore = async (filename: string) => {
+    try {
+      await fetch('/admin/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename })
+      });
+      // UI update will happen via WebSocket
+    } catch (e) {
+      alert("Restore failed");
+    }
+  };
+
+  const handleRollback = async (steps: number) => {
+    // Determine steps. "Undo Last" implies we want to go back to the previous one.
+    // If we are at index 0, we want index 1. So steps=1.
+    // My previous assumption in backend was "rollback(steps) -> target_index = steps".
+    // So if I pass 1, it targets history[1]. This is correct for "Undo".
+    try {
+      await fetch('/admin/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ steps: 1 })
+      });
+    } catch (e) {
+      alert("Rollback failed");
+    }
+  }
+
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4">
       <SnowEffect />
+      <AdminPanel
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+        onRestore={handleRestore}
+        onRollback={handleRollback}
+      />
 
       <div className="glass w-full max-w-5xl rounded-3xl p-8 flex flex-col md:flex-row gap-8 z-10">
 
@@ -134,6 +286,15 @@ function App() {
               onError={() => console.error("Failed to load:", treeUrl)}
             />
           </div>
+
+          <a
+            href={treeUrl}
+            download={`christmas_tree_${Date.now()}.png`}
+            className="mt-6 px-8 py-3 bg-gradient-to-r from-green-600 to-green-800 hover:from-green-500 hover:to-green-700 text-white rounded-full font-bold shadow-lg transform transition-all hover:scale-105 flex items-center gap-2 border border-white/20"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Download Creation
+          </a>
         </div>
 
         {/* Controls Section */}
@@ -186,6 +347,12 @@ function App() {
         }
         .animate-fall {
             animation-name: fall;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
       `}</style>
     </div>

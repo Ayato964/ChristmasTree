@@ -1,0 +1,16 @@
+Task: Non-Destructive Addition of Miniature Object
+
+**1. Base Image & Conservation Constraint (CRITICAL):**
+- Use the first image (the huge Christmas tree wide shot) as the immutable base canvas.
+- **ABSOLUTE PROHIBITION:** You must NOT change the composition, zoom, or angle of the base image.
+- **PRESERVE EXISTING ELEMENTS:** If there are already other character ornaments or decorations on the tree, you must PRESERVE them exactly as they are. Do NOT remove, cover, or alter any existing items. The goal is to add to the collection, not replace it.
+
+**2. Object to Add (From Image 2):**
+- Take the character from the second image.
+- Scale it down extremely to become a **tiny, miniature size** relative to the huge tree.
+
+**3. Placement Strategy (Scalability):**
+- Identify an **unoccupied, empty space** on a pine branch in the base image.
+- Place the new tiny character into that empty space.
+- Ensure the placement looks natural, as if it's hanging or sitting on the branch.
+- This action must be capable of being repeated hundreds of times (up to 1000+) without overlapping or deleting previously placed characters, always finding new empty spots.

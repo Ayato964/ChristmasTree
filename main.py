@@ -16,19 +16,79 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
+from google.genai import types
 from PIL import Image
 import io
+import boto3
+from botocore.exceptions import ClientError
+from fastapi.responses import Response
 
 app = FastAPI()
 
-# Make sure directories exist
-os.makedirs("assets", exist_ok=True)
-os.makedirs("assets/history", exist_ok=True)
+# --- Cloudflare R2 / S3 Setup ---
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME")
+
+# Initialize S3 Client only if credentials exist (fallback to local if not set, or error out)
+s3_client = None
+if R2_ENDPOINT_URL and R2_ACCESS_KEY_ID:
+    try:
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=R2_ENDPOINT_URL,
+            aws_access_key_id=R2_ACCESS_KEY_ID,
+            aws_secret_access_key=R2_SECRET_ACCESS_KEY
+        )
+        print("S3 Client initialized successfully.")
+    except Exception as e:
+        print(f"Failed to initialize S3 client: {e}")
 
 # Mount static files
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/tree-assets", StaticFiles(directory="assets"), name="tree-assets")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# If R2 is used, we serve /tree-assets via a custom endpoint that fetches from R2.
+# If R2 is NOT used (s3_client is None), we fallback to local providing backward compatibility logic locally if needed,
+# BUT for this migration we assume R2 is the goal.
+# However, to avoid breaking local dev without creds immediately, let's keep local mount if s3_client is None.
+
+if s3_client is None:
+    # Fallback to local
+    os.makedirs("assets", exist_ok=True)
+    os.makedirs("assets/history", exist_ok=True)
+    app.mount("/tree-assets", StaticFiles(directory="assets"), name="tree-assets")
+else:
+    # R2 Mode: Define a route to proxy/stream images
+    @app.get("/tree-assets/{filename}")
+    async def get_tree_asset(filename: str):
+        try:
+            # Determine if it's history or current
+            # Our HistoryManager stores everything in root or history/ ?
+            # Let's adjust HistoryManager to simple paths in R2.
+            # "assets/current_tree.png" -> "current_tree.png" in bucket
+            # "assets/history/tree_..." -> "history/tree_..." in bucket
+            
+            key = ""
+            if filename == "current_tree.png":
+                key = "current_tree.png"
+            elif filename == "HEAD":
+                key = "HEAD"
+            else:
+                key = f"history/{filename}"
+
+            response = s3_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
+            return Response(
+                content=response['Body'].read(),
+                media_type="image/png" if filename.endswith(".png") else "text/plain"
+            )
+        except ClientError as e:
+            raise HTTPException(status_code=404, detail="File not found in storage")
+        except Exception as e:
+            print(f"R2 Fetch Error: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 # Mount frontend assets if they exist (for production)
 if os.path.exists("static/assets"):
     app.mount("/assets", StaticFiles(directory="static/assets"), name="frontend-assets")
@@ -51,61 +111,119 @@ class HistoryManager:
 
     @classmethod
     def get_head(cls) -> Optional[str]:
-        """Returns the filename currently pointed to by HEAD."""
-        if os.path.exists(cls.HEAD_FILE):
-            try:
-                with open(cls.HEAD_FILE, "r") as f:
-                    return f.read().strip()
-            except:
-                pass
-        
-        # Fallback: return the latest history file if exists
-        history = cls.get_history_list()
-        if history:
-            return history[0]
-        return None
+        """Returns the filename currently pointed to by HEAD via R2."""
+        if not s3_client:
+             # LOCAL FALLBACK (Old Logic)
+            if os.path.exists(cls.HEAD_FILE):
+                try:
+                    with open(cls.HEAD_FILE, "r") as f:
+                        return f.read().strip()
+                except:
+                    pass
+            # Fallback: return the latest history file if exists
+            history = cls.get_history_list()
+            if history:
+                return history[0]
+            return None
+
+        # R2 LOGIC
+        try:
+            response = s3_client.get_object(Bucket=R2_BUCKET_NAME, Key="HEAD")
+            return response['Body'].read().decode('utf-8').strip()
+        except ClientError:
+            # HEAD not found, try to find latest history
+            history = cls.get_history_list()
+            if history:
+                return history[0]
+            return None
 
     @classmethod
     def update_head(cls, filename: str):
         """Updates HEAD to point to the given filename."""
-        with open(cls.HEAD_FILE, "w") as f:
-            f.write(filename)
+        if not s3_client:
+            with open(cls.HEAD_FILE, "w") as f:
+                f.write(filename)
+            return
+
+        s3_client.put_object(
+            Bucket=R2_BUCKET_NAME,
+            Key="HEAD",
+            Body=filename.encode('utf-8'),
+            ContentType="text/plain"
+        )
 
     @classmethod
     def save_to_history(cls, image_data: bytes) -> str:
         """Saves image data to history directory with timestamp. Returns filename."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         filename = f"tree_{timestamp}.png"
-        path = os.path.join(cls.HISTORY_DIR, filename)
         
-        with open(path, "wb") as f:
-            f.write(image_data)
-        
+        if not s3_client:
+            path = os.path.join(cls.HISTORY_DIR, filename)
+            with open(path, "wb") as f:
+                f.write(image_data)
+            return filename
+
+        # R2 Upload
+        key = f"history/{filename}"
+        s3_client.put_object(
+            Bucket=R2_BUCKET_NAME,
+            Key=key,
+            Body=image_data,
+            ContentType="image/png"
+        )
         return filename
 
     @classmethod
     def set_active_image(cls, history_filename: str):
         """Copies a history file to the current tree location and updates HEAD."""
-        source = os.path.join(cls.HISTORY_DIR, history_filename)
-        if not os.path.exists(source):
-            raise FileNotFoundError(f"History file {history_filename} not found")
-        
-        shutil.copy2(source, cls.CURRENT_TREE_PATH)
-        cls.update_head(history_filename)
+        if not s3_client:
+            source = os.path.join(cls.HISTORY_DIR, history_filename)
+            if not os.path.exists(source):
+                raise FileNotFoundError(f"History file {history_filename} not found")
+            shutil.copy2(source, cls.CURRENT_TREE_PATH)
+            cls.update_head(history_filename)
+            return
+
+        # R2 Copy
+        try:
+            copy_source = {'Bucket': R2_BUCKET_NAME, 'Key': f"history/{history_filename}"}
+            s3_client.copy(copy_source, R2_BUCKET_NAME, "current_tree.png")
+            cls.update_head(history_filename)
+        except ClientError as e:
+            print(f"R2 Copy Error: {e}")
+            raise HTTPException(status_code=404, detail="Source image not found in storage")
 
     @classmethod
     def get_history_list(cls):
         """Returns list of history files sorted by newest first."""
-        files = glob.glob(os.path.join(cls.HISTORY_DIR, "tree_*.png"))
-        # Sort by name (which has timestamp) descending
-        files.sort(reverse=True)
-        return [os.path.basename(f) for f in files]
+        if not s3_client:
+            files = glob.glob(os.path.join(cls.HISTORY_DIR, "tree_*.png"))
+            files.sort(reverse=True)
+            return [os.path.basename(f) for f in files]
+
+        # R2 List
+        try:
+            response = s3_client.list_objects_v2(Bucket=R2_BUCKET_NAME, Prefix="history/tree_")
+            if 'Contents' not in response:
+                return []
+            
+            # Extract filenames
+            # Key is like "history/tree_2025...png", we want "tree_2025...png"
+            files = []
+            for obj in response['Contents']:
+                files.append(os.path.basename(obj['Key']))
+            
+            # Sort descending (names contain timestamp)
+            files.sort(reverse=True)
+            return files
+        except Exception as e:
+            print(f"R2 List Error: {e}")
+            return []
 
     @classmethod
     def rollback(cls, steps: int):
-        """Rollbacks 'steps' relative to current HEAD.
-        steps=1 means go to the previous version from HEAD.
-        """
+        """Rollbacks 'steps' relative to current HEAD."""
         history = cls.get_history_list()
         if not history:
             raise HTTPException(status_code=400, detail="No history available")
@@ -165,19 +283,43 @@ async def generate_decoration(decoration_bytes: bytes, decoration_type: str):
     parts = []
     
     # 1. Base Tree (if exists)
-    # Use HEAD if available to ensure we build from the known state
     head_file = HistoryManager.get_head()
-    base_image_path = HistoryManager.CURRENT_TREE_PATH
     
-    if head_file:
-        full_head_path = os.path.join(HistoryManager.HISTORY_DIR, head_file)
-        if os.path.exists(full_head_path):
-            base_image_path = full_head_path
-            print(f"Generating based on HEAD: {head_file}")
-            
-    if os.path.exists(base_image_path):
-        with open(base_image_path, "rb") as f:
-            parts.append(types.Part.from_bytes(data=f.read(), mime_type="image/png"))
+    # Logic to fetch base image data depending on mode
+    if s3_client:
+        # R2 Mode: Fetch from R2
+        try:
+            if head_file:
+                # If we have a head, use it. But wait, HistoryManager.CURRENT_TREE_PATH is local convention.
+                # In R2, we maintain "current_tree.png" at root.
+                print(f"Fetching base image from R2: current_tree.png (based on {head_file})")
+                obj = s3_client.get_object(Bucket=R2_BUCKET_NAME, Key="current_tree.png")
+                base_image_data = obj['Body'].read()
+                parts.append(types.Part.from_bytes(data=base_image_data, mime_type="image/png"))
+            else:
+                # No HEAD. Is there a current?
+                try:
+                    obj = s3_client.get_object(Bucket=R2_BUCKET_NAME, Key="current_tree.png")
+                    base_image_data = obj['Body'].read()
+                    print("Fetching base image from R2: current_tree.png")
+                    parts.append(types.Part.from_bytes(data=base_image_data, mime_type="image/png"))
+                except ClientError:
+                    print("No current_tree.png found in R2. Creating fresh start if possible or skipping base.")
+        except Exception as e:
+            print(f"Error fetching base from R2: {e}")
+
+    else:
+        # LOCAL FALLBACK
+        base_image_path = HistoryManager.CURRENT_TREE_PATH
+        if head_file:
+            full_head_path = os.path.join(HistoryManager.HISTORY_DIR, head_file)
+            if os.path.exists(full_head_path):
+                base_image_path = full_head_path
+                print(f"Generating based on HEAD: {head_file}")
+                
+        if os.path.exists(base_image_path):
+            with open(base_image_path, "rb") as f:
+                parts.append(types.Part.from_bytes(data=f.read(), mime_type="image/png"))
     
     # 2. Decoration
     parts.append(types.Part.from_bytes(data=decoration_bytes, mime_type=decoration_type))
@@ -185,11 +327,10 @@ async def generate_decoration(decoration_bytes: bytes, decoration_type: str):
     # 3. Instruction
     # Load prompt from prompt.json
     try:
-        with open("prompt.json", "r", encoding="utf-8") as f:
-            prompt_data = json.load(f)
-            prompt_text = prompt_data.get("decoration_prompt", "Synthesize these images.")
+        with open("prompt.txt", "r", encoding="utf-8") as f:
+            prompt_text = f.read().strip()
     except Exception as e:
-        print(f"Error loading prompt.json: {e}")
+        print(f"Error loading prompt.txt: {e}")
         prompt_text = "Synthesize these images. Place the provided decoration object (the second image) onto the Christmas Tree (the first image) in a decorative and festive way. Return ONLY the composited image."
 
     parts.append(types.Part.from_text(text=prompt_text))
@@ -305,16 +446,20 @@ if __name__ == "__main__":
     import uvicorn
     import uvicorn
     # Initial setup: Restore from HEAD if exists, else init HEAD
-    head = HistoryManager.get_head()
-    if head:
-        print(f"Restoring state from HEAD: {head}")
-        try:
-            HistoryManager.set_active_image(head)
-        except Exception as e:
-            print(f"Failed to restore HEAD: {e}")
-    elif os.path.exists("assets/current_tree.png") and not glob.glob("assets/history/tree_*.png"):
-         with open("assets/current_tree.png", "rb") as f:
-             HistoryManager.save_to_history(f.read())
+    # Initial setup: Restore from HEAD if exists, else init HEAD
+    # In R2 mode, this check might just be printing status, as state is persistent in the bucket.
+    if not s3_client:
+        # Local logic
+        head = HistoryManager.get_head()
+        if head:
+            print(f"Restoring state from HEAD: {head}")
+            try:
+                HistoryManager.set_active_image(head)
+            except Exception as e:
+                print(f"Failed to restore HEAD: {e}")
+        elif os.path.exists("assets/current_tree.png") and not glob.glob("assets/history/tree_*.png"):
+             with open("assets/current_tree.png", "rb") as f:
+                 HistoryManager.save_to_history(f.read())
              # This will set HEAD too via save_to_history? No, save_to_history just returns filename.
              # We should set initialization.
              # Actually save_to_history doesn't update HEAD. set_active_image does.

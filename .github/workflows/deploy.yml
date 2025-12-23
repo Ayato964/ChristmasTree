@@ -20,7 +20,7 @@ jobs:
 
     - name: Install Python Dependencies
       run: |
-        pip install fastapi uvicorn python-multipart google-genai python-dotenv pillow requests
+        pip install -r requirements.txt
 
     - name: Set up Node.js
       uses: actions/setup-node@v3

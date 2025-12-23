@@ -1,30 +1,36 @@
 **Role:**
-Act as a logical image editor. Use "Strict Logical Thinking" to edit the images according to the following procedure.
+Act as a strict image composition specialist operating under rigid constraints. Your primary directive is NON-DESTRUCTIVE editing.
 
 **Inputs:**
-* Image A: Current Christmas Tree (Base)
-* Image B: New Character (To be added)
+* Image A: Current Christmas Tree state (The "Sanctuary")
+* Image B: New Character to add (The "Asset")
 
-**Logical Workflow (Strict Evaluation):**
+**Directive & Logical Workflow:**
 
-1.  **Density & Space Analysis (Scan):**
-    Evaluate the current density of ornaments on the tree in Image A.
-    * **Strict Criterion:** Is there ample, clear branch space to hang Image B with a **visible gap (buffer zone)** between it and ALL surrounding existing ornaments and text? (If it looks crowded, the answer is NO).
+**Rule 1: The Sanctuary Definition**
+Image A is defined as a "Sanctuary." Every pixel currently belonging to existing characters, text ("We are Google AI..."), and their immediate surrounding aura is **READ-ONLY**. You are strictly prohibited from altering, overwriting, obscuring, or deleting anything within the Sanctuary.
 
-2.  **Branching Logic:**
-    * **CASE 1 [Ample Space Available (Gap guaranteed)]:**
-        Resize Image B to a "tiny size equivalent to existing characters" and hang it as an ornament on an empty branch. Ensure a clear gap remains around it.
-    * **CASE 2 [Crowded / No Clear Buffer Zone]:**
-        **MANDATORY AUTO-OUTPAINTING EXECUTION.**
-        You MUST expand the canvas. Place Image A in the center, zoom out significantly (0.6x), and **explicitly expand the existing Christmas tree structure seamlessly outwards**, filling the new perimeter with new, empty tree branches and foliage in the same style. **Only then**, place Image B in the newly created empty space.
+**Rule 2: Strict Size Reference**
+Identify the central orange monster in a suit in Image A. This character is your **"Size Reference Object."** Image B MUST be scaled to be physically **identical in size and proportion** to this reference object. Giant or tiny variations are disallowed.
 
-**Fatal Constraints (CRITICAL):**
+**Logical Process:**
 
-* **NO OVERLAPPING:** Image B must NOT touch or overlap any existing characters or text in Image A under any circumstances. If it cannot be placed without overlapping, you MUST execute CASE 2.
-* **Text Protection:** Treat the top-left text "We are Google AI Student Ambassadors!" as logo data. **Strictly prohibit regeneration, degradation, or alteration.**
-* **Consistency:** Completely maintain the art style, shape, and size of the existing characters in Image A.
-* **Lighting Integration:** Seamlessly integrate Image B's lighting to match Image A.
-* **Strict Size Re-emphasis:** Image B MUST be a tiny ornament size.
+1.  **Scan for "Safe Zone":**
+    Analyze Image A. Is there an empty branch space perfectly clear of the Sanctuary areas (existing elements) where the sized-correct Image B can be placed with zero overlap?
+    * **CRITICAL:** If placing Image B would even slightly touch an existing character's fur or the text, the answer is **NO**.
+
+2.  **Branching Action:**
+    * **CASE 1 [Safe Zone Found]:**
+        Place the scaled-correct Image B in that safe empty space as a hanging ornament. **Do not touch the Sanctuary pixels.**
+    * **CASE 2 [No Safe Zone / Overcrowded]:**
+        **EXECUTE MANDATORY CAMERA PULL-BACK.**
+        The current canvas is full. You MUST pull the camera back (zoom out 0.6x) to reveal a wider view. Center the original Image A untouched. Generate NEW tree branches and background in the expanded area. **Only then**, place the scaled-correct Image B in this **completely new territory**.
+
+**Fatal Constraints (Zero Tolerance):**
+
+* **NO OVERWRITING:** Overlapping existing characters is an absolute failure. If you cannot place it without overlapping, you MUST execute CASE 2 (Camera Pull-Back).
+* **SIZE CONSISTENCY:** Image B must perfectly match the scale of the existing "Size Reference Object" (orange monster).
+* **TEXT PRESERVATION:** The top-left text is immutable logo data. Touch it and fail.
 
 **Output:**
-One edited image.
+One perfectly composed image adhering to all rules.

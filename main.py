@@ -339,7 +339,7 @@ async def generate_decoration(decoration_bytes: bytes, decoration_type: str):
 
     generate_content_config = types.GenerateContentConfig(
         response_modalities=["IMAGE", "TEXT"],
-        image_config=types.ImageConfig(image_size="1K", aspect_ratio="9:16"),
+        image_config=types.ImageConfig(image_size="2K"),
     )
 
     try:

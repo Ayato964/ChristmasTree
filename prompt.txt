@@ -1,29 +1,30 @@
 **Role:**
-Act as a logical image editor. Use "Logical Thinking" to edit the images according to the following procedure.
+Act as a logical image editor. Use "Strict Logical Thinking" to edit the images according to the following procedure.
 
 **Inputs:**
 * Image A: Current Christmas Tree (Base)
 * Image B: New Character (To be added)
 
-**Logical Workflow:**
+**Logical Workflow (Strict Evaluation):**
 
-1.  **Spatial Analysis (Scan):**
-    Analyze Image A to determine if there is "natural empty space (branches)" to place Image B.
-    * **Criterion:** Can Image B be placed without overlapping existing characters or the text ("We are Google AI...")?
+1.  **Density & Space Analysis (Scan):**
+    Evaluate the current density of ornaments on the tree in Image A.
+    * **Strict Criterion:** Is there ample, clear branch space to hang Image B with a **visible gap (buffer zone)** between it and ALL surrounding existing ornaments and text? (If it looks crowded, the answer is NO).
 
 2.  **Branching Logic:**
-    * **CASE 1 [Space Available]:**
-        Resize Image B to a "tiny size equivalent to existing characters" and hang it as an ornament with a string on an empty branch of Image A. Do not modify the existing image by even a single pixel.
-    * **CASE 2 [No Space / Overcrowded]:**
-        **Execute Auto-Outpainting.**
-        Place Image A in the center, zoom out (0.7x), and draw new "empty branches" and background around the perimeter. **Then**, place Image B in the newly created space.
+    * **CASE 1 [Ample Space Available (Gap guaranteed)]:**
+        Resize Image B to a "tiny size equivalent to existing characters" and hang it as an ornament on an empty branch. Ensure a clear gap remains around it.
+    * **CASE 2 [Crowded / No Clear Buffer Zone]:**
+        **MANDATORY AUTO-OUTPAINTING EXECUTION.**
+        You MUST expand the canvas. Place Image A in the center, zoom out significantly (0.6x), and generate new, empty tree branches and extended background around the perimeter. **Only then**, place Image B in the newly created empty Christmas Tree's space.
 
 **Fatal Constraints (CRITICAL):**
 
-* **Text Protection:** Treat the top-left text "We are Google AI Student Ambassadors!" as logo data. **Strictly prohibit regeneration, degradation, or alteration under any circumstances.**
-* **Consistency:** Completely maintain the art style, shape, and size of the existing characters in Image A.
-* **Lighting Integration:** Integrate the lighting and shadowing of the added Image B to seamlessly match the warm atmospheric lighting and soft shadows of Image A.
-* **Strict Size Re-emphasis:** Image B MUST be scaled down to a **"tiny size, physically equivalent to the existing characters"**. Do not make it larger under any circumstances.
+* **NO OVERLAPPING:** Image B must NOT touch or overlap any existing characters or text in Image A under any circumstances. If it cannot be placed without overlapping, you MUST execute CASE 2.
+* **Text Protection:** Treat the top-left text "We are Google AI Student Ambassadors!" as logo data. **Strictly prohibit regeneration, degradation, or alteration.**
+* **Consistency:** Completely maintain the art style, shape, and size of the existing characters.
+* **Lighting Integration:** Seamlessly integrate Image B's lighting to match Image A.
+* **Strict Size Re-emphasis:** Image B MUST be a tiny ornament size.
 
 **Output:**
 One edited image.

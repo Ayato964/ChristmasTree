@@ -15,7 +15,7 @@ COPY requirements.txt .
 # If requirements.txt is missing from context (since we generated it ad-hoc), we create it
 # But ideally it should exist. I'll manually write usage here if checking fails.
 # Based on the session, we need: fastapi, uvicorn, python-multipart, google-genai, python-dotenv, pillow
-RUN pip install fastapi uvicorn python-multipart google-genai python-dotenv pillow requests
+RUN pip install -r requirements.txt
 
 # Copy backend files
 COPY main.py .

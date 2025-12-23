@@ -16,13 +16,13 @@ Act as a logical image editor. Use "Strict Logical Thinking" to edit the images 
         Resize Image B to a "tiny size equivalent to existing characters" and hang it as an ornament on an empty branch. Ensure a clear gap remains around it.
     * **CASE 2 [Crowded / No Clear Buffer Zone]:**
         **MANDATORY AUTO-OUTPAINTING EXECUTION.**
-        You MUST expand the canvas. Place Image A in the center, zoom out significantly (0.6x), and generate new, empty tree branches and extended background around the perimeter. **Only then**, place Image B in the newly created empty Christmas Tree's space.
+        You MUST expand the canvas. Place Image A in the center, zoom out significantly (0.6x), and **explicitly expand the existing Christmas tree structure seamlessly outwards**, filling the new perimeter with new, empty tree branches and foliage in the same style. **Only then**, place Image B in the newly created empty space.
 
 **Fatal Constraints (CRITICAL):**
 
 * **NO OVERLAPPING:** Image B must NOT touch or overlap any existing characters or text in Image A under any circumstances. If it cannot be placed without overlapping, you MUST execute CASE 2.
 * **Text Protection:** Treat the top-left text "We are Google AI Student Ambassadors!" as logo data. **Strictly prohibit regeneration, degradation, or alteration.**
-* **Consistency:** Completely maintain the art style, shape, and size of the existing characters.
+* **Consistency:** Completely maintain the art style, shape, and size of the existing characters in Image A.
 * **Lighting Integration:** Seamlessly integrate Image B's lighting to match Image A.
 * **Strict Size Re-emphasis:** Image B MUST be a tiny ornament size.
 
